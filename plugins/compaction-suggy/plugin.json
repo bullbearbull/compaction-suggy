@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/plugin.json",
+  "name": "compaction-suggy",
+  "version": "0.1.0",
+  "description": "Compaction Suggy — detects topic shifts before prompt processing via Decision Model APIs (OpenRouter Jev, OpenAI GPT-6 Luna, or local Ollama/vLLM) and suggests running /compact.",
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "extensions": {
+    "com.openai": {
+      "presentation": {
+        "title": "Compaction Suggy"
+      }
+    }
+  }
+}

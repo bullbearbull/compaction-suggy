@@ -1,0 +1,12 @@
+{
+  "name": "@topic-shift-compact/cli-hook",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "topic-shift-compact": "./dist/cli.mjs",
+    "topic-shift-compact-hook": "./dist/hook.mjs"
+  },
+  "dependencies": {
+    "@topic-shift-compact/core": "0.1.0"
+  }
+}

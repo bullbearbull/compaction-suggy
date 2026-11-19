@@ -1,0 +1,29 @@
+{
+  "name": "compaction-suggy-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Compaction Suggy — topic-shift detection & compaction advisor for ChatGPT Web, Claude.ai Web, Claude Code (Hooks & Mods), Claude Desktop (Code/Cowork), and OpenAI Codex (CLI/Desktop/IDE) powered by Decision Model APIs.",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc -b packages/core packages/cli-hook packages/claude-mod && tsc -p packages/browser-extension/tsconfig.json --noEmit && node scripts/build.mjs",
+    "typecheck": "tsc -b packages/core packages/cli-hook packages/claude-mod && tsc -p packages/browser-extension/tsconfig.json --noEmit",
+    "icons": "node scripts/generate-icons.mjs",
+    "package:extension": "npm run build && node scripts/package-extension.mjs",
+    "package:chatgpt": "npm run package:extension",
+    "mock-server": "node scripts/mock-decision-server.mjs",
+    "test": "npm run build && node --test packages/core/test/*.test.ts packages/cli-hook/test/*.test.ts packages/claude-mod/test/*.test.ts packages/browser-extension/test/*.test.ts",
+    "clean": "rm -rf packages/core/dist packages/cli-hook/dist packages/claude-mod/dist packages/browser-extension/dist packages/*/*.tsbuildinfo plugins/compaction-suggy/dist plugins/compaction-suggy-mod/dist release"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.24.2",
+    "typescript": "^5.7.2"
+  },
+  "license": "MIT"
+}

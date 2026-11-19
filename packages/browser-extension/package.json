@@ -1,0 +1,10 @@
+{
+  "name": "@compaction-suggy/browser-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Compaction Suggy Chrome/Edge Manifest V3 extension for ChatGPT Web and Claude.ai — detects topic shifts via Decision Models and offers clean or compacted New Chat handoff.",
+  "dependencies": {
+    "@topic-shift-compact/core": "0.1.0"
+  }
+}

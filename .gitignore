@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+*.log
+packages/*/dist/
+packages/*/*.tsbuildinfo
+release/
+.env
+.env.local
+# Keep plugins/*/dist/ tracked so marketplace installs work without npm install!

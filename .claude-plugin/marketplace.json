@@ -1,0 +1,24 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "compaction-suggy-marketplace",
+  "description": "Compaction Suggy — topic-shift detection and compaction advisor powered by ultra-low-latency Decision Model APIs (OpenRouter Jev, OpenAI GPT-6 Luna, and local Ollama/vLLM).",
+  "owner": {
+    "name": "bullbearbull"
+  },
+  "plugins": [
+    {
+      "name": "compaction-suggy",
+      "description": "Universal UserPromptSubmit hook plugin for Claude Code & Claude Desktop (Code/Cowork) that detects topic shifts via Decision Models and suggests /compact.",
+      "version": "0.1.0",
+      "category": "productivity",
+      "source": "./plugins/compaction-suggy"
+    },
+    {
+      "name": "compaction-suggy-mod",
+      "description": "In-process Claude Code Mod (Mods API 2.1.287+) with zero subprocess spawn overhead and UI toast notifications.",
+      "version": "0.1.0",
+      "category": "productivity",
+      "source": "./plugins/compaction-suggy-mod"
+    }
+  ]
+}

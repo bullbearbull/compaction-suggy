@@ -1,0 +1,12 @@
+{
+  "name": "@compaction-suggy/claude-mod",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "In-process Claude Code Mod (Mods API 2.1.287+) for Compaction Suggy — zero subprocess spawn overhead on UserPromptSubmit.",
+  "main": "./dist/register.js",
+  "types": "./dist/register.d.ts",
+  "dependencies": {
+    "@topic-shift-compact/core": "0.1.0"
+  }
+}

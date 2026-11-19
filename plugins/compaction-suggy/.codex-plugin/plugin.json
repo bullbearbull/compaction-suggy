@@ -1,0 +1,37 @@
+{
+  "name": "compaction-suggy",
+  "version": "0.1.0",
+  "description": "Detects abrupt topic shifts before prompt processing via Decision Model APIs (OpenRouter Jev, OpenAI GPT-6 Luna, Local Ollama/vLLM) and suggests running /compact.",
+  "author": {
+    "name": "bullbearbull",
+    "url": "https://github.com/bullbearbull"
+  },
+  "homepage": "https://github.com/bullbearbull/compaction-suggy",
+  "repository": "https://github.com/bullbearbull/compaction-suggy",
+  "license": "MIT",
+  "keywords": [
+    "compaction",
+    "compact",
+    "topic-shift",
+    "decision-model",
+    "context-management",
+    "hooks"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "Compaction Suggy",
+    "shortDescription": "Detect topic shifts and suggest /compact before context rot",
+    "longDescription": "Compaction Suggy intercepts UserPromptSubmit with ultra-low-latency Decision Models (OpenRouter Jev, OpenAI GPT-6 Luna, or local Ollama/vLLM) and suggests running /compact whenever your prompt switches to an unrelated topic.",
+    "developerName": "bullbearbull",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Read"],
+    "websiteURL": "https://github.com/bullbearbull/compaction-suggy",
+    "defaultPrompt": [
+      "Help me configure Compaction Suggy with OpenRouter Jev or local Ollama."
+    ],
+    "brandColor": "#10A37F",
+    "logo": "./assets/logo.png",
+    "screenshots": []
+  }
+}

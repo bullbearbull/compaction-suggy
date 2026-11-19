@@ -1,0 +1,20 @@
+{
+  "name": "compaction-suggy",
+  "version": "0.1.0",
+  "description": "Compaction Suggy — detects topic shifts on UserPromptSubmit via Decision Model APIs (OpenRouter Jev, OpenAI GPT-6 Luna, Local Ollama/vLLM) and suggests running /compact.",
+  "author": {
+    "name": "bullbearbull",
+    "url": "https://github.com/bullbearbull"
+  },
+  "homepage": "https://github.com/bullbearbull/compaction-suggy",
+  "repository": "https://github.com/bullbearbull/compaction-suggy",
+  "license": "MIT",
+  "keywords": [
+    "compaction",
+    "compact",
+    "topic-shift",
+    "decision-model",
+    "context-management",
+    "hooks"
+  ]
+}

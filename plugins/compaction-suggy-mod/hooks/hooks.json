@@ -1,0 +1,6 @@
+{
+  "description": "Compaction Suggy in-process Claude Code Mod for ultra-low-latency topic-shift detection",
+  "modules": [
+    "../dist/register.mjs"
+  ]
+}

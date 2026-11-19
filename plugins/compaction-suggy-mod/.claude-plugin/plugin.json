@@ -1,0 +1,20 @@
+{
+  "name": "compaction-suggy-mod",
+  "version": "0.1.0",
+  "description": "Compaction Suggy in-process Claude Code Mod (Mods API 2.1.287+) — zero subprocess spawn overhead on UserPromptSubmit with UI toast notifications.",
+  "author": {
+    "name": "bullbearbull",
+    "url": "https://github.com/bullbearbull"
+  },
+  "homepage": "https://github.com/bullbearbull/compaction-suggy",
+  "repository": "https://github.com/bullbearbull/compaction-suggy",
+  "license": "MIT",
+  "keywords": [
+    "compaction",
+    "compact",
+    "topic-shift",
+    "decision-model",
+    "claude-code-mod",
+    "hooks"
+  ]
+}

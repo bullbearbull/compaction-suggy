@@ -1,0 +1,20 @@
+{
+  "name": "compaction-suggy-marketplace",
+  "interface": {
+    "displayName": "Compaction Suggy"
+  },
+  "plugins": [
+    {
+      "name": "compaction-suggy",
+      "source": {
+        "source": "local",
+        "path": "./plugins/compaction-suggy"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
