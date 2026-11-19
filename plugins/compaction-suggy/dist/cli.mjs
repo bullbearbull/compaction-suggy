@@ -593,8 +593,17 @@ function resolveDecisionProvider(config, options = {}) {
 
 // packages/cli-hook/src/cli.ts
 var HOOK_MARKERS = ["compaction-suggy", "topic-shift-compact"];
-function isOwnHookCommand(command) {
-  return typeof command === "string" && HOOK_MARKERS.some((marker) => command.includes(marker));
+function isOwnHookEntry(entry) {
+  if (!entry) return false;
+  if (typeof entry.command === "string" && HOOK_MARKERS.some((marker) => entry.command.includes(marker))) {
+    return true;
+  }
+  if (Array.isArray(entry.args) && entry.args.some(
+    (arg) => typeof arg === "string" && HOOK_MARKERS.some((marker) => arg.includes(marker))
+  )) {
+    return true;
+  }
+  return false;
 }
 function parseArgs(argv) {
   const command = argv[0] ?? "help";
@@ -816,7 +825,7 @@ function isHookInstalledInFile(filePath) {
     const hooksMap = root.hooks && typeof root.hooks === "object" && !Array.isArray(root.hooks) ? root.hooks : void 0;
     const groups = Array.isArray(hooksMap?.UserPromptSubmit) ? hooksMap.UserPromptSubmit : [];
     return groups.some(
-      (group) => Array.isArray(group?.hooks) && group.hooks.some((h) => isOwnHookCommand(h?.command))
+      (group) => Array.isArray(group?.hooks) && group.hooks.some((h) => isOwnHookEntry(h))
     );
   } catch {
     return false;
@@ -824,12 +833,11 @@ function isHookInstalledInFile(filePath) {
 }
 function installHookToTarget(target, hookScript) {
   const settingsFile = getUserSettingsFile(target);
-  const command = `node "${hookScript}"`;
   const root = readJsonObject(settingsFile);
   const hooksMap = root.hooks && typeof root.hooks === "object" && !Array.isArray(root.hooks) ? { ...root.hooks } : {};
   const existingGroups = Array.isArray(hooksMap.UserPromptSubmit) ? [...hooksMap.UserPromptSubmit] : [];
   const alreadyInstalled = existingGroups.some(
-    (group) => Array.isArray(group?.hooks) && group.hooks.some((h) => isOwnHookCommand(h?.command))
+    (group) => Array.isArray(group?.hooks) && group.hooks.some((h) => isOwnHookEntry(h))
   );
   if (alreadyInstalled) {
     console.log(`Hook already registered in ${settingsFile}`);
@@ -839,7 +847,8 @@ function installHookToTarget(target, hookScript) {
     hooks: [
       {
         type: "command",
-        command,
+        command: "node",
+        args: [hookScript],
         timeout: 10
       }
     ]
@@ -850,7 +859,7 @@ function installHookToTarget(target, hookScript) {
   fs2.writeFileSync(settingsFile, `${JSON.stringify(root, null, 2)}
 `, "utf8");
   console.log(`Registered UserPromptSubmit hook in ${settingsFile}`);
-  console.log(`Command: ${command}`);
+  console.log(`Command: node "${hookScript}"`);
 }
 function runInstallUser(flags) {
   const target = getFlagString(flags, "target");
@@ -878,7 +887,7 @@ function uninstallHookFromTarget(target) {
     return;
   }
   const filtered = hooksMap.UserPromptSubmit.filter(
-    (group) => !(Array.isArray(group?.hooks) && group.hooks.some((h) => isOwnHookCommand(h?.command)))
+    (group) => !(Array.isArray(group?.hooks) && group.hooks.some((h) => isOwnHookEntry(h)))
   );
   hooksMap.UserPromptSubmit = filtered;
   root.hooks = hooksMap;

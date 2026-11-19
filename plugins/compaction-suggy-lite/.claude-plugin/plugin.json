@@ -1,0 +1,20 @@
+{
+  "name": "compaction-suggy-lite",
+  "version": "0.1.0",
+  "description": "Proactive topic-shift awareness and context compaction advisor for Claude. Detects unrelated topic switches during long sessions and guides clean /compact handoffs.",
+  "author": {
+    "name": "bullbearbull",
+    "url": "https://github.com/bullbearbull"
+  },
+  "homepage": "https://github.com/bullbearbull/compaction-suggy",
+  "repository": "https://github.com/bullbearbull/compaction-suggy",
+  "license": "MIT",
+  "keywords": [
+    "compaction",
+    "compact",
+    "context-management",
+    "topic-shift",
+    "productivity",
+    "workflow"
+  ]
+}

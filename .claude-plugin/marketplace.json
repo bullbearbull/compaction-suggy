@@ -15,10 +15,17 @@
     },
     {
       "name": "compaction-suggy-mod",
-      "description": "In-process Claude Code Mod (Mods API 2.1.287+) with zero subprocess spawn overhead and UI toast notifications.",
+      "description": "In-process Claude Code Mod (Mods API 2.1.287+) with zero subprocess spawn overhead on prompt.submit.",
       "version": "0.1.0",
       "category": "productivity",
       "source": "./plugins/compaction-suggy-mod"
+    },
+    {
+      "name": "compaction-suggy-lite",
+      "description": "Pure skill and slash-command edition (zero hooks or scripts) for proactive topic-shift awareness and /compact handoffs.",
+      "version": "0.1.0",
+      "category": "productivity",
+      "source": "./plugins/compaction-suggy-lite"
     }
   ]
 }

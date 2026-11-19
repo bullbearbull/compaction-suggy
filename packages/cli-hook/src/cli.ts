@@ -20,11 +20,24 @@ import {
 
 const HOOK_MARKERS = ["compaction-suggy", "topic-shift-compact"];
 
-function isOwnHookCommand(command: unknown): boolean {
-  return (
-    typeof command === "string" &&
-    HOOK_MARKERS.some((marker) => command.includes(marker))
-  );
+function isOwnHookEntry(entry: HookHandlerEntry | undefined): boolean {
+  if (!entry) return false;
+  if (
+    typeof entry.command === "string" &&
+    HOOK_MARKERS.some((marker) => entry.command!.includes(marker))
+  ) {
+    return true;
+  }
+  if (
+    Array.isArray(entry.args) &&
+    entry.args.some(
+      (arg) =>
+        typeof arg === "string" && HOOK_MARKERS.some((marker) => arg.includes(marker)),
+    )
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function parseArgs(argv: string[]): {
@@ -271,6 +284,7 @@ function readJsonObject(filePath: string): Record<string, unknown> {
 interface HookHandlerEntry {
   type?: string;
   command?: string;
+  args?: string[];
   timeout?: number;
 }
 
@@ -298,8 +312,7 @@ function isHookInstalledInFile(filePath: string): boolean {
       : [];
     return groups.some(
       (group) =>
-        Array.isArray(group?.hooks) &&
-        group.hooks.some((h) => isOwnHookCommand(h?.command)),
+        Array.isArray(group?.hooks) && group.hooks.some((h) => isOwnHookEntry(h)),
     );
   } catch {
     return false;
@@ -308,7 +321,6 @@ function isHookInstalledInFile(filePath: string): boolean {
 
 function installHookToTarget(target: "claude" | "codex", hookScript: string): void {
   const settingsFile = getUserSettingsFile(target);
-  const command = `node "${hookScript}"`;
   const root = readJsonObject(settingsFile);
   const hooksMap =
     root.hooks && typeof root.hooks === "object" && !Array.isArray(root.hooks)
@@ -321,8 +333,7 @@ function installHookToTarget(target: "claude" | "codex", hookScript: string): vo
 
   const alreadyInstalled = existingGroups.some(
     (group) =>
-      Array.isArray(group?.hooks) &&
-      group.hooks.some((h) => isOwnHookCommand(h?.command)),
+      Array.isArray(group?.hooks) && group.hooks.some((h) => isOwnHookEntry(h)),
   );
 
   if (alreadyInstalled) {
@@ -334,7 +345,8 @@ function installHookToTarget(target: "claude" | "codex", hookScript: string): vo
     hooks: [
       {
         type: "command",
-        command,
+        command: "node",
+        args: [hookScript],
         timeout: 10,
       },
     ],
@@ -346,7 +358,7 @@ function installHookToTarget(target: "claude" | "codex", hookScript: string): vo
   fs.mkdirSync(path.dirname(settingsFile), { recursive: true });
   fs.writeFileSync(settingsFile, `${JSON.stringify(root, null, 2)}\n`, "utf8");
   console.log(`Registered UserPromptSubmit hook in ${settingsFile}`);
-  console.log(`Command: ${command}`);
+  console.log(`Command: node "${hookScript}"`);
 }
 
 function runInstallUser(flags: Record<string, string | boolean>): void {
@@ -385,10 +397,7 @@ function uninstallHookFromTarget(target: "claude" | "codex"): void {
 
   const filtered = (hooksMap.UserPromptSubmit as HookGroupEntry[]).filter(
     (group) =>
-      !(
-        Array.isArray(group?.hooks) &&
-        group.hooks.some((h) => isOwnHookCommand(h?.command))
-      ),
+      !(Array.isArray(group?.hooks) && group.hooks.some((h) => isOwnHookEntry(h))),
   );
 
   hooksMap.UserPromptSubmit = filtered;

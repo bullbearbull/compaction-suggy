@@ -13,7 +13,8 @@ Before the main LLM processes your new prompt, **Compaction Suggy** compares it 
 | **ChatGPT Web** (`chatgpt.com`) | `packages/browser-extension` | Chrome / Edge MV3 extension — intercepts Enter/Send, offers **New Chat**, **Compact Handoff**, or **Send here** |
 | **Claude Web** (`claude.ai`) | `packages/browser-extension` | Same unified Chrome / Edge MV3 extension — native terracotta UI, ProseMirror/TipTap adapter, `/new` handoff |
 | **Claude Code** (CLI / IDE, all versions) | `plugins/compaction-suggy` | Universal `UserPromptSubmit` hook plugin (`compaction-suggy@compaction-suggy-marketplace`) |
-| **Claude Code Mods** (v2.1.287+) | `plugins/compaction-suggy-mod` | In-process worker-thread Mod (`compaction-suggy-mod@compaction-suggy-marketplace`) — zero subprocess spawn overhead + UI toasts |
+| **Claude Code Mods** (v2.1.287+) | `plugins/compaction-suggy-mod` | In-process worker-thread Mod (`compaction-suggy-mod@compaction-suggy-marketplace`) — zero subprocess spawn overhead on `prompt.submit` |
+| **Claude Official Directory (Lite)** | `plugins/compaction-suggy-lite` | Pure Skill + `/suggest-compact` & `/topic-check` slash commands (zero hooks or scripts — compliant with Anthropic Community Directory rules) |
 | **Claude Desktop** (Code / Cowork) | `plugins/compaction-suggy` | Shared Claude Code hook + `cli.mjs install-user --target claude` (`~/.claude/settings.json` fallback for Cowork) |
 | **OpenAI Codex** (CLI / Codex Desktop / ChatGPT Desktop Codex / IDE) | `plugins/compaction-suggy` | Codex plugin marketplace + `cli.mjs install-user --target codex` (`~/.codex/hooks.json`) |
 | **ChatGPT Desktop / Claude Desktop** (general Chat tab) | *N/A* | Neither native desktop app exposes pre-send prompt interception APIs for general chat tabs (use Web + extension for general chat, and hooks above for Codex / Claude Code / Cowork) |
@@ -142,7 +143,8 @@ compaction-suggy/
 │   └── browser-extension/                     # Unified Chrome/Edge MV3 Extension (ChatGPT Web + Claude.ai Web)
 ├── plugins/
 │   ├── compaction-suggy/                      # Universal Claude Code + Codex hook plugin (zero-dep bundles)
-│   └── compaction-suggy-mod/                  # In-process Claude Code Mod plugin (zero-dep bundle)
+│   ├── compaction-suggy-mod/                  # In-process Claude Code Mod plugin (zero-dep bundle)
+│   └── compaction-suggy-lite/                 # Pure Skill & Slash Commands plugin (Anthropic Community Directory)
 └── scripts/                                   # esbuild bundler, icon generator, extension packager, mock server
 ```
 
