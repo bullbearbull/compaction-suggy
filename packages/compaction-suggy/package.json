@@ -1,0 +1,47 @@
+{
+  "name": "compaction-suggy",
+  "version": "0.1.0",
+  "description": "Topic-shift detection & /compact advisor for Claude Code, Claude Desktop (Code/Cowork), and OpenAI Codex powered by ultra-low-latency Decision Models (OpenRouter Jev, OpenAI GPT-6 Luna, Local Ollama/vLLM).",
+  "type": "module",
+  "license": "MIT",
+  "author": "bullbearbull <https://github.com/bullbearbull>",
+  "homepage": "https://github.com/bullbearbull/compaction-suggy#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bullbearbull/compaction-suggy.git",
+    "directory": "packages/compaction-suggy"
+  },
+  "bugs": {
+    "url": "https://github.com/bullbearbull/compaction-suggy/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "claude",
+    "codex",
+    "openai-codex",
+    "compact",
+    "compaction",
+    "topic-shift",
+    "decision-model",
+    "openrouter",
+    "ollama",
+    "hooks",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "bin": {
+    "compaction-suggy": "./dist/cli.mjs",
+    "compaction-suggy-hook": "./dist/hook.mjs"
+  },
+  "files": [
+    "dist/cli.mjs",
+    "dist/hook.mjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

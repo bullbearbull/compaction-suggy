@@ -18,7 +18,20 @@ import {
   type ProviderSelection,
 } from "@topic-shift-compact/core";
 
+const CLI_VERSION = "0.1.0";
 const HOOK_MARKERS = ["compaction-suggy", "topic-shift-compact"];
+
+interface HookHandlerEntry {
+  type?: string;
+  command?: string;
+  args?: string[];
+  timeout?: number;
+}
+
+interface HookGroupEntry {
+  matcher?: string;
+  hooks?: HookHandlerEntry[];
+}
 
 function isOwnHookEntry(entry: HookHandlerEntry | undefined): boolean {
   if (!entry) return false;
@@ -75,21 +88,56 @@ function getFlagString(
   return typeof v === "string" ? v : undefined;
 }
 
-function resolveHookScriptPath(): string {
+function getFlagBool(
+  flags: Record<string, string | boolean>,
+  key: string,
+): boolean {
+  return flags[key] === true;
+}
+
+function resolveBundledHookScriptPath(): string {
   const currentFile = fileURLToPath(import.meta.url);
   return path.join(path.dirname(currentFile), "hook.mjs");
 }
 
+/**
+ * Returns a permanent user-local path for the standalone hook binary so that
+ * `npx compaction-suggy install` keeps working even after npm cleans `_npx` cache.
+ */
+export function getInstalledHookPath(env: NodeJS.ProcessEnv = process.env): string {
+  if (env.COMPACTION_SUGGY_HOOK_PATH?.trim()) {
+    return env.COMPACTION_SUGGY_HOOK_PATH.trim();
+  }
+  if (process.platform === "win32") {
+    const localAppData =
+      env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
+    return path.join(localAppData, "compaction-suggy", "hook.mjs");
+  }
+  const xdgDataHome =
+    env.XDG_DATA_HOME || path.join(os.homedir(), ".local", "share");
+  return path.join(xdgDataHome, "compaction-suggy", "hook.mjs");
+}
+
 function printHelp(): void {
-  console.log(`Compaction Suggy CLI
+  console.log(`Compaction Suggy v${CLI_VERSION}
+Topic-shift detection & /compact advisor for Claude Code, Claude Desktop (Code/Cowork), and OpenAI Codex.
 
 Usage:
-  node cli.mjs <command> [options]
+  npx compaction-suggy <command> [options]
 
 Commands:
+  install              Install standalone hook binary (~/.local/share/compaction-suggy/hook.mjs)
+                       and register UserPromptSubmit hook in Claude Code and/or Codex settings
+    --target           claude | codex | all (default: auto-detect installed tools)
+    --in-place         Register the current hook.mjs path directly instead of copying
+
+  uninstall            Remove Compaction Suggy hook from user settings and clean up installed binary
+    --target           claude | codex | all (default: all)
+
   init                 Write user config (~/.config/topic-shift-compact/config.json)
     --provider         openrouter | openai | local | auto (default: auto)
     --model            Override model ID (e.g. typesafe/jev-latest, gpt-6-luna, tev1)
+    --api-key          Optional API key to store in user config (chmod 600); env vars are recommended
     --threshold        Topic-shift probability threshold 0.0-1.0 (default: 0.75)
     --mode             block | advisory (default: block)
     --language         auto | ko | en (default: auto)
@@ -97,17 +145,17 @@ Commands:
     --local-format     systemone | openai-decisions (default: systemone)
     --min-turns        Minimum user turns before checking (default: 3)
 
-  doctor               Inspect resolved config, provider credentials, and hook status
+  doctor               Inspect resolved config, provider credentials, and installed hook status
 
   test                 Send a live test decision query using active config
     --context          Prior conversation context (optional sample provided)
     --prompt           New user prompt to test (optional sample provided)
 
-  install-user         Register UserPromptSubmit hook in user settings (Claude Code, Claude Desktop Cowork, Codex CLI/Desktop)
-    --target           claude | codex | all (required)
+  --version, -v        Print CLI version
 
-  uninstall-user       Remove Compaction Suggy hook from user settings
-    --target           claude | codex | all (required)
+Aliases:
+  install-user         Alias for install
+  uninstall-user       Alias for uninstall
 `);
 }
 
@@ -115,7 +163,9 @@ function runInit(flags: Record<string, string | boolean>): void {
   const configPath = getUserConfigPath();
   const provider = (getFlagString(flags, "provider") ?? "auto") as ProviderSelection;
   if (!["openrouter", "openai", "local", "auto"].includes(provider)) {
-    throw new Error(`Invalid --provider "${provider}". Use openrouter | openai | local | auto.`);
+    throw new Error(
+      `Invalid --provider "${provider}". Use openrouter | openai | local | auto.`,
+    );
   }
 
   const mode = (getFlagString(flags, "mode") ?? "block") as HookMode;
@@ -141,6 +191,7 @@ function runInit(flags: Record<string, string | boolean>): void {
   const minTurnsRaw = getFlagString(flags, "min-turns");
   const minTurns = minTurnsRaw ? Number(minTurnsRaw) : 3;
   const model = getFlagString(flags, "model");
+  const apiKey = getFlagString(flags, "api-key")?.trim();
   const localUrl = getFlagString(flags, "local-url") ?? DEFAULT_LOCAL_URL;
 
   const nextConfig: PartialTopicShiftConfig = {
@@ -153,30 +204,112 @@ function runInit(flags: Record<string, string | boolean>): void {
     minTurns: Number.isFinite(minTurns) ? Math.max(1, Math.round(minTurns)) : 3,
     openrouter: {
       model: DEFAULT_OPENROUTER_MODEL,
+      ...(apiKey && (provider === "openrouter" || provider === "auto")
+        ? { apiKey }
+        : {}),
     },
     openai: {
       model: DEFAULT_OPENAI_MODEL,
+      ...(apiKey && provider === "openai" ? { apiKey } : {}),
     },
     local: {
       url: localUrl,
       apiFormat: localFormat,
       model: DEFAULT_LOCAL_MODEL,
+      ...(apiKey && provider === "local" ? { apiKey } : {}),
     },
   };
 
   fs.mkdirSync(path.dirname(configPath), { recursive: true });
-  fs.writeFileSync(configPath, `${JSON.stringify(nextConfig, null, 2)}\n`, "utf8");
+  fs.writeFileSync(configPath, `${JSON.stringify(nextConfig, null, 2)}\n`, {
+    encoding: "utf8",
+    mode: apiKey ? 0o600 : 0o644,
+  });
+  if (apiKey && process.platform !== "win32") {
+    try {
+      fs.chmodSync(configPath, 0o600);
+    } catch {
+      // Ignore chmod errors on restricted filesystems
+    }
+  }
+
+  const printable = JSON.parse(JSON.stringify(nextConfig)) as Record<string, any>;
+  for (const section of ["openrouter", "openai", "local"]) {
+    if (printable[section]?.apiKey) {
+      printable[section].apiKey = "***redacted***";
+    }
+  }
   console.log(`Wrote config to ${configPath}`);
-  console.log(JSON.stringify(nextConfig, null, 2));
+  console.log(JSON.stringify(printable, null, 2));
+}
+
+function getUserSettingsFile(target: "claude" | "codex"): string {
+  if (target === "claude") {
+    return path.join(os.homedir(), ".claude", "settings.json");
+  }
+  return path.join(os.homedir(), ".codex", "hooks.json");
+}
+
+function readJsonObject(filePath: string): Record<string, unknown> {
+  if (!fs.existsSync(filePath)) return {};
+  const raw = fs.readFileSync(filePath, "utf8");
+  const parsed = JSON.parse(raw) as unknown;
+  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    return parsed as Record<string, unknown>;
+  }
+  return {};
+}
+
+function resolveInstallTargets(rawTarget: string | undefined): Array<"claude" | "codex"> {
+  if (!rawTarget) {
+    const detected: Array<"claude" | "codex"> = [];
+    if (fs.existsSync(path.join(os.homedir(), ".claude"))) {
+      detected.push("claude");
+    }
+    if (fs.existsSync(path.join(os.homedir(), ".codex"))) {
+      detected.push("codex");
+    }
+    return detected.length > 0 ? detected : ["claude"];
+  }
+  if (rawTarget === "all") return ["claude", "codex"];
+  if (rawTarget === "claude" || rawTarget === "codex") return [rawTarget];
+  throw new Error(
+    `Invalid --target "${rawTarget}". Expected "claude", "codex", or "all".`,
+  );
+}
+
+function isHookInstalledInFile(filePath: string): boolean {
+  try {
+    if (!fs.existsSync(filePath)) return false;
+    const root = readJsonObject(filePath);
+    const hooksMap =
+      root.hooks && typeof root.hooks === "object" && !Array.isArray(root.hooks)
+        ? (root.hooks as Record<string, unknown>)
+        : undefined;
+    const groups = Array.isArray(hooksMap?.UserPromptSubmit)
+      ? (hooksMap.UserPromptSubmit as HookGroupEntry[])
+      : [];
+    return groups.some(
+      (group) =>
+        Array.isArray(group?.hooks) && group.hooks.some((h) => isOwnHookEntry(h)),
+    );
+  } catch {
+    return false;
+  }
 }
 
 function runDoctor(): void {
   const config = loadConfig({ cwd: process.cwd() });
   const resolved = resolveDecisionProvider(config);
+  const installedHookPath = getInstalledHookPath();
+  const hasInstalledBinary = fs.existsSync(installedHookPath);
 
-  console.log("Compaction Suggy doctor\n");
+  console.log(`Compaction Suggy doctor (v${CLI_VERSION})\n`);
   console.log(`User config path : ${getUserConfigPath()}`);
   console.log(`Bypass cache path: ${config.bypassCachePath}`);
+  console.log(
+    `Installed hook   : ${hasInstalledBinary ? installedHookPath : `not installed (${installedHookPath})`}`,
+  );
   console.log(`Enabled          : ${config.enabled}`);
   console.log(`Mode             : ${config.mode}`);
   console.log(`Language         : ${config.language}`);
@@ -261,64 +394,6 @@ async function runTest(flags: Record<string, string | boolean>): Promise<void> {
   );
 }
 
-function getUserSettingsFile(target: string): string {
-  if (target === "claude") {
-    return path.join(os.homedir(), ".claude", "settings.json");
-  }
-  if (target === "codex") {
-    return path.join(os.homedir(), ".codex", "hooks.json");
-  }
-  throw new Error(`Invalid --target "${target}". Expected "claude" or "codex".`);
-}
-
-function readJsonObject(filePath: string): Record<string, unknown> {
-  if (!fs.existsSync(filePath)) return {};
-  const raw = fs.readFileSync(filePath, "utf8");
-  const parsed = JSON.parse(raw) as unknown;
-  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-    return parsed as Record<string, unknown>;
-  }
-  return {};
-}
-
-interface HookHandlerEntry {
-  type?: string;
-  command?: string;
-  args?: string[];
-  timeout?: number;
-}
-
-interface HookGroupEntry {
-  matcher?: string;
-  hooks?: HookHandlerEntry[];
-}
-
-function resolveTargets(target: string): Array<"claude" | "codex"> {
-  if (target === "all") return ["claude", "codex"];
-  if (target === "claude" || target === "codex") return [target];
-  throw new Error(`Invalid --target "${target}". Expected "claude", "codex", or "all".`);
-}
-
-function isHookInstalledInFile(filePath: string): boolean {
-  try {
-    if (!fs.existsSync(filePath)) return false;
-    const root = readJsonObject(filePath);
-    const hooksMap =
-      root.hooks && typeof root.hooks === "object" && !Array.isArray(root.hooks)
-        ? (root.hooks as Record<string, unknown>)
-        : undefined;
-    const groups = Array.isArray(hooksMap?.UserPromptSubmit)
-      ? (hooksMap.UserPromptSubmit as HookGroupEntry[])
-      : [];
-    return groups.some(
-      (group) =>
-        Array.isArray(group?.hooks) && group.hooks.some((h) => isOwnHookEntry(h)),
-    );
-  } catch {
-    return false;
-  }
-}
-
 function installHookToTarget(target: "claude" | "codex", hookScript: string): void {
   const settingsFile = getUserSettingsFile(target);
   const root = readJsonObject(settingsFile);
@@ -331,17 +406,14 @@ function installHookToTarget(target: "claude" | "codex", hookScript: string): vo
     ? ([...(hooksMap.UserPromptSubmit as HookGroupEntry[])])
     : [];
 
-  const alreadyInstalled = existingGroups.some(
+  // Replace any prior Compaction Suggy / topic-shift-compact entry so upgrades stay clean
+  const cleanedGroups = existingGroups.filter(
     (group) =>
-      Array.isArray(group?.hooks) && group.hooks.some((h) => isOwnHookEntry(h)),
+      !(Array.isArray(group?.hooks) && group.hooks.some((h) => isOwnHookEntry(h))),
   );
+  const wasUpgrade = cleanedGroups.length !== existingGroups.length;
 
-  if (alreadyInstalled) {
-    console.log(`Hook already registered in ${settingsFile}`);
-    return;
-  }
-
-  existingGroups.push({
+  cleanedGroups.push({
     hooks: [
       {
         type: "command",
@@ -352,29 +424,53 @@ function installHookToTarget(target: "claude" | "codex", hookScript: string): vo
     ],
   });
 
-  hooksMap.UserPromptSubmit = existingGroups;
+  hooksMap.UserPromptSubmit = cleanedGroups;
   root.hooks = hooksMap;
 
   fs.mkdirSync(path.dirname(settingsFile), { recursive: true });
   fs.writeFileSync(settingsFile, `${JSON.stringify(root, null, 2)}\n`, "utf8");
-  console.log(`Registered UserPromptSubmit hook in ${settingsFile}`);
-  console.log(`Command: node "${hookScript}"`);
+  console.log(
+    `${wasUpgrade ? "Updated" : "Registered"} UserPromptSubmit hook in ${settingsFile}`,
+  );
+  console.log(`  Hook: node "${hookScript}"`);
 }
 
-function runInstallUser(flags: Record<string, string | boolean>): void {
-  const target = getFlagString(flags, "target");
-  if (!target) {
-    throw new Error("Missing required --target claude | codex | all");
+function runInstall(flags: Record<string, string | boolean>): void {
+  const rawTarget = getFlagString(flags, "target");
+  const targets = resolveInstallTargets(rawTarget);
+  const inPlace = getFlagBool(flags, "in-place");
+
+  const bundledHook = resolveBundledHookScriptPath();
+  if (!fs.existsSync(bundledHook)) {
+    throw new Error(
+      `Bundled hook script not found at ${bundledHook}. Run npm run build first.`,
+    );
   }
 
-  const hookScript = resolveHookScriptPath();
-  if (!fs.existsSync(hookScript)) {
-    throw new Error(`Bundled hook script not found at ${hookScript}. Run npm run build first.`);
+  let hookPathToRegister = bundledHook;
+  if (!inPlace) {
+    const installedPath = getInstalledHookPath();
+    fs.mkdirSync(path.dirname(installedPath), { recursive: true });
+    fs.copyFileSync(bundledHook, installedPath);
+    if (process.platform !== "win32") {
+      fs.chmodSync(installedPath, 0o755);
+    }
+    hookPathToRegister = installedPath;
+    console.log(`Installed standalone hook binary to ${installedPath}`);
   }
 
-  for (const t of resolveTargets(target)) {
-    installHookToTarget(t, hookScript);
+  for (const t of targets) {
+    installHookToTarget(t, hookPathToRegister);
   }
+
+  if (targets.includes("codex")) {
+    console.log(
+      "\nTip: In Codex CLI/Desktop, approve the hook on first use via `/hooks` or Settings -> Hooks.",
+    );
+  }
+  console.log(
+    "\nNext: Configure your Decision Model provider if not set yet:\n  npx compaction-suggy init --provider openrouter   # or openai | local\n  npx compaction-suggy doctor",
+  );
 }
 
 function uninstallHookFromTarget(target: "claude" | "codex"): void {
@@ -406,20 +502,36 @@ function uninstallHookFromTarget(target: "claude" | "codex"): void {
   console.log(`Removed Compaction Suggy UserPromptSubmit hook from ${settingsFile}`);
 }
 
-function runUninstallUser(flags: Record<string, string | boolean>): void {
-  const target = getFlagString(flags, "target");
-  if (!target) {
-    throw new Error("Missing required --target claude | codex | all");
+function runUninstall(flags: Record<string, string | boolean>): void {
+  const rawTarget = getFlagString(flags, "target") ?? "all";
+  const targets = resolveInstallTargets(rawTarget);
+
+  for (const t of targets) {
+    uninstallHookFromTarget(t);
   }
 
-  for (const t of resolveTargets(target)) {
-    uninstallHookFromTarget(t);
+  // Remove the permanent copied binary if neither Claude nor Codex still uses it
+  const stillUsed =
+    isHookInstalledInFile(getUserSettingsFile("claude")) ||
+    isHookInstalledInFile(getUserSettingsFile("codex"));
+  const installedPath = getInstalledHookPath();
+  if (!stillUsed && fs.existsSync(installedPath)) {
+    fs.rmSync(installedPath, { force: true });
+    console.log(`Removed standalone hook binary ${installedPath}`);
   }
 }
 
 async function main(): Promise<void> {
   const { command, flags } = parseArgs(process.argv.slice(2));
   switch (command) {
+    case "install":
+    case "install-user":
+      runInstall(flags);
+      break;
+    case "uninstall":
+    case "uninstall-user":
+      runUninstall(flags);
+      break;
     case "init":
       runInit(flags);
       break;
@@ -429,11 +541,10 @@ async function main(): Promise<void> {
     case "test":
       await runTest(flags);
       break;
-    case "install-user":
-      runInstallUser(flags);
-      break;
-    case "uninstall-user":
-      runUninstallUser(flags);
+    case "--version":
+    case "-v":
+    case "version":
+      console.log(CLI_VERSION);
       break;
     case "help":
     case "--help":

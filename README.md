@@ -43,7 +43,25 @@ npm run mock-server        # Optional local mock Decision API server for zero-co
 
 ---
 
-## 2. Plugin Marketplace Installation (Claude Code & OpenAI Codex)
+## 2. Quick Install via npm (`npx compaction-suggy`) — Claude Code, Claude Desktop & Codex
+
+Works immediately without requiring marketplace verification (copies a self-contained ~40 KB zero-dependency hook binary to `~/.local/share/compaction-suggy/hook.mjs` so it stays fast and survives `_npx` cache cleanup):
+
+```bash
+# Install hook for Claude Code, Claude Desktop (Code/Cowork), and/or OpenAI Codex
+npx compaction-suggy install --target all       # or --target claude | --target codex
+
+# Configure your Decision Model provider (openrouter | openai | local)
+npx compaction-suggy init --provider openrouter --model typesafe/jev-latest
+
+# Verify & test
+npx compaction-suggy doctor
+npx compaction-suggy test
+```
+
+---
+
+## 3. Plugin Marketplace Installation (Claude Code & OpenAI Codex)
 
 ### Claude Code (Universal Hook or In-Process Mod)
 
@@ -79,7 +97,7 @@ node plugins/compaction-suggy/dist/cli.mjs install-user --target all
 
 ---
 
-## 3. CLI Provider Setup (Claude Code & Codex)
+## 4. CLI Provider Setup (Claude Code & Codex)
 
 ```bash
 # Option 1: OpenRouter (typesafe/jev-latest)
@@ -138,7 +156,8 @@ compaction-suggy/
 ├── .agents/plugins/marketplace.json           # OpenAI Codex / Agent Marketplace (compaction-suggy)
 ├── packages/
 │   ├── core/                                  # Shared zero-dependency Decision Engine (Node + Browser)
-│   ├── cli-hook/                              # Universal UserPromptSubmit hook + CLI helper
+│   ├── cli-hook/                              # Universal UserPromptSubmit hook + CLI source
+│   ├── compaction-suggy/                      # Zero-dependency publishable npm package (`npx compaction-suggy`)
 │   ├── claude-mod/                            # In-process Claude Code Mod (Mods API 2.1.287+)
 │   └── browser-extension/                     # Unified Chrome/Edge MV3 Extension (ChatGPT Web + Claude.ai Web)
 ├── plugins/

@@ -16,9 +16,11 @@
     "icons": "node scripts/generate-icons.mjs",
     "package:extension": "npm run build && node scripts/package-extension.mjs",
     "package:chatgpt": "npm run package:extension",
+    "pack:npm": "npm run build && mkdir -p release && npm pack --workspace=compaction-suggy --pack-destination=release",
+    "publish:npm": "npm run build && npm publish --workspace=compaction-suggy --access public",
     "mock-server": "node scripts/mock-decision-server.mjs",
     "test": "npm run build && node --test packages/core/test/*.test.ts packages/cli-hook/test/*.test.ts packages/claude-mod/test/*.test.ts packages/browser-extension/test/*.test.ts",
-    "clean": "rm -rf packages/core/dist packages/cli-hook/dist packages/claude-mod/dist packages/browser-extension/dist packages/*/*.tsbuildinfo plugins/compaction-suggy/dist plugins/compaction-suggy-mod/dist release"
+    "clean": "rm -rf packages/core/dist packages/cli-hook/dist packages/claude-mod/dist packages/browser-extension/dist packages/compaction-suggy/dist packages/*/*.tsbuildinfo plugins/compaction-suggy/dist plugins/compaction-suggy-mod/dist release"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

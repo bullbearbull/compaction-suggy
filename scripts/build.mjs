@@ -8,6 +8,8 @@ const rootDir = path.resolve(__dirname, "..");
 const pluginDistDir = path.join(rootDir, "plugins", "compaction-suggy", "dist");
 const modDistDir = path.join(rootDir, "plugins", "compaction-suggy-mod", "dist");
 const cliDistDir = path.join(rootDir, "packages", "cli-hook", "dist");
+const npmPkgDir = path.join(rootDir, "packages", "compaction-suggy");
+const npmDistDir = path.join(npmPkgDir, "dist");
 const extDir = path.join(rootDir, "packages", "browser-extension");
 const extPublicDir = path.join(extDir, "public");
 const extDistDir = path.join(extDir, "dist");
@@ -15,6 +17,7 @@ const extDistDir = path.join(extDir, "dist");
 fs.mkdirSync(pluginDistDir, { recursive: true });
 fs.mkdirSync(modDistDir, { recursive: true });
 fs.mkdirSync(cliDistDir, { recursive: true });
+fs.mkdirSync(npmDistDir, { recursive: true });
 fs.mkdirSync(extDistDir, { recursive: true });
 
 const sharedNodeOptions = {
@@ -49,11 +52,27 @@ fs.copyFileSync(
   path.join(cliDistDir, "cli.mjs"),
 );
 
+// Mirror zero-dependency bundles + LICENSE into publishable npm package `packages/compaction-suggy`
+fs.copyFileSync(
+  path.join(pluginDistDir, "hook.mjs"),
+  path.join(npmDistDir, "hook.mjs"),
+);
+fs.copyFileSync(
+  path.join(pluginDistDir, "cli.mjs"),
+  path.join(npmDistDir, "cli.mjs"),
+);
+fs.copyFileSync(
+  path.join(rootDir, "LICENSE"),
+  path.join(npmPkgDir, "LICENSE"),
+);
+
 for (const file of [
   path.join(pluginDistDir, "hook.mjs"),
   path.join(pluginDistDir, "cli.mjs"),
   path.join(cliDistDir, "hook.mjs"),
   path.join(cliDistDir, "cli.mjs"),
+  path.join(npmDistDir, "hook.mjs"),
+  path.join(npmDistDir, "cli.mjs"),
 ]) {
   fs.chmodSync(file, 0o755);
 }
